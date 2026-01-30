@@ -47,6 +47,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Blueprint custom colors
+        blueprint: {
+          DEFAULT: "hsl(var(--blueprint))",
+          light: "hsl(var(--blueprint-light))",
+          grid: "hsl(var(--blueprint-grid))",
+        },
+        copper: {
+          DEFAULT: "hsl(var(--copper))",
+          dark: "hsl(var(--copper-dark))",
+        },
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
