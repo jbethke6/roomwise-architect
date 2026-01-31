@@ -99,14 +99,12 @@ export function simulateAnalysis(
 ): Promise<FloorplanAnalysis> {
   return new Promise((resolve) => {
     const steps = [
-      { progress: 10, message: 'Bild wird hochgeladen...', delay: 500 },
-      { progress: 25, message: 'Bildqualität wird geprüft...', delay: 800 },
-      { progress: 40, message: 'Maßstab wird erkannt...', delay: 1000 },
-      { progress: 55, message: 'Räume werden identifiziert...', delay: 1200 },
-      { progress: 70, message: 'Maße werden extrahiert...', delay: 1000 },
-      { progress: 85, message: 'Fehlende Werte werden interpoliert...', delay: 800 },
-      { progress: 95, message: 'Ergebnisse werden validiert...', delay: 600 },
-      { progress: 100, message: 'Analyse abgeschlossen!', delay: 400 },
+      { progress: 15, message: 'Bild wird verarbeitet...', delay: 400 },
+      { progress: 35, message: 'Räume werden erkannt...', delay: 600 },
+      { progress: 55, message: 'Maße werden extrahiert...', delay: 700 },
+      { progress: 75, message: 'Flächen werden berechnet...', delay: 500 },
+      { progress: 90, message: 'Ergebnisse werden aufbereitet...', delay: 400 },
+      { progress: 100, message: 'Fertig!', delay: 300 },
     ];
 
     let currentStep = 0;
