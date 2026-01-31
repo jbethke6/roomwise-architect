@@ -2,13 +2,14 @@ import { useState, useCallback } from 'react';
 import { Header } from '@/components/floorplan/Header';
 import { UploadZone } from '@/components/floorplan/UploadZone';
 import { AnalysisProgress } from '@/components/floorplan/AnalysisProgress';
-import { ResultsTable } from '@/components/floorplan/ResultsTable';
+import { EditableResultsTable } from '@/components/floorplan/EditableResultsTable';
+import { FloorplanPreview } from '@/components/floorplan/FloorplanPreview';
 import { AnalysisHints } from '@/components/floorplan/AnalysisHints';
 import { ExportButtons } from '@/components/floorplan/ExportButtons';
 import { simulateAnalysis } from '@/lib/mock-analysis';
 import { AnalysisStatus, FloorplanAnalysis } from '@/types/floorplan';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Info } from 'lucide-react';
+import { RotateCcw, Upload, Building2 } from 'lucide-react';
 
 const Index = () => {
   const [status, setStatus] = useState<AnalysisStatus>({
@@ -17,9 +18,17 @@ const Index = () => {
     message: '',
   });
   const [analysis, setAnalysis] = useState<FloorplanAnalysis | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string>('');
 
   const handleFileSelect = useCallback(async (file: File) => {
     setAnalysis(null);
+    setFileName(file.name);
+    
+    // Create object URL for preview
+    const url = URL.createObjectURL(file);
+    setImageUrl(url);
+    
     setStatus({
       status: 'uploading',
       progress: 0,
@@ -51,8 +60,17 @@ const Index = () => {
   }, []);
 
   const handleReset = () => {
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+    }
     setStatus({ status: 'idle', progress: 0, message: '' });
     setAnalysis(null);
+    setImageUrl(null);
+    setFileName('');
+  };
+
+  const handleAnalysisChange = (updatedAnalysis: FloorplanAnalysis) => {
+    setAnalysis(updatedAnalysis);
   };
 
   return (
@@ -73,28 +91,16 @@ const Index = () => {
         <Header />
 
         <main className="container mx-auto px-6 py-8">
-          {/* Demo Notice */}
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-copper/30 bg-copper/5 p-4">
-            <Info className="mt-0.5 h-5 w-5 shrink-0 text-copper" />
-            <div className="text-sm">
-              <p className="font-medium text-copper">Demo-Modus aktiv</p>
-              <p className="text-muted-foreground">
-                Diese Version zeigt simulierte Analyseergebnisse. Für echte KI-Analyse 
-                kann später die Mistral-API angebunden werden.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-8 lg:grid-cols-2">
-            {/* Left Column - Upload */}
-            <div className="space-y-6">
-              <div>
+          {!analysis ? (
+            // Upload State
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="text-center">
                 <h2 className="mb-2 text-2xl font-bold text-foreground">
                   Grundriss hochladen
                 </h2>
                 <p className="text-muted-foreground">
                   Laden Sie einen Grundriss als JPG, PNG oder PDF hoch. 
-                  Die KI analysiert automatisch alle Räume und Maße.
+                  Die Räume werden automatisch erkannt und vermessen.
                 </p>
               </div>
 
@@ -105,55 +111,52 @@ const Index = () => {
 
               <AnalysisProgress status={status} />
             </div>
-
-            {/* Right Column - Results */}
+          ) : (
+            // Results State - Split Layout
             <div className="space-y-6">
-              {analysis ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">
-                        Analyseergebnis
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        {analysis.fileName}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={handleReset}>
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Neue Analyse
-                    </Button>
-                  </div>
-
-                  <ResultsTable analysis={analysis} />
-                  <AnalysisHints analysis={analysis} />
-
-                  <div className="flex justify-end">
-                    <ExportButtons analysis={analysis} />
-                  </div>
-                </>
-              ) : (
-                <div className="flex h-full min-h-[400px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30">
-                  <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                      <Building2 className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground">
-                      Laden Sie einen Grundriss hoch,<br />
-                      um die Analyse zu starten
-                    </p>
-                  </div>
+              {/* Header Row */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">
+                    BGF-Berechnung
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Bearbeiten Sie Räume und Maße nach Bedarf
+                  </p>
                 </div>
-              )}
+                <div className="flex items-center gap-2">
+                  <ExportButtons analysis={analysis} />
+                  <Button variant="outline" size="sm" onClick={handleReset}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Neuer Grundriss
+                  </Button>
+                </div>
+              </div>
+
+              {/* Split Layout: Preview + Table */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Left: Floorplan Preview */}
+                <div className="space-y-4">
+                  {imageUrl && (
+                    <FloorplanPreview imageUrl={imageUrl} fileName={fileName} />
+                  )}
+                  <AnalysisHints analysis={analysis} />
+                </div>
+
+                {/* Right: Editable Table */}
+                <div>
+                  <EditableResultsTable 
+                    analysis={analysis} 
+                    onAnalysisChange={handleAnalysisChange}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
     </div>
   );
 };
-
-// Import for the empty state icon
-import { Building2 } from 'lucide-react';
 
 export default Index;
