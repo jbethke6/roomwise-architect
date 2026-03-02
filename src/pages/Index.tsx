@@ -1,76 +1,81 @@
 import { useState, useCallback } from 'react';
 import { Header } from '@/components/floorplan/Header';
 import { UploadZone } from '@/components/floorplan/UploadZone';
+import { PageManager } from '@/components/floorplan/PageManager';
 import { AnalysisProgress } from '@/components/floorplan/AnalysisProgress';
-import { EditableResultsTable } from '@/components/floorplan/EditableResultsTable';
-import { FloorplanPreview } from '@/components/floorplan/FloorplanPreview';
-import { AnalysisHints } from '@/components/floorplan/AnalysisHints';
+import { FloorResultsTabs } from '@/components/floorplan/FloorResultsTabs';
 import { ExportButtons } from '@/components/floorplan/ExportButtons';
-import { simulateAnalysis } from '@/lib/mock-analysis';
-import { AnalysisStatus, FloorplanAnalysis } from '@/types/floorplan';
+import { analyzeFloorplans } from '@/lib/api';
+import { getConfig, saveConfig } from '@/lib/config';
+import { AnalysisStatus, AnalysisResult, ExtractedPage } from '@/types/floorplan';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Upload, Building2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Upload, Settings, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Index = () => {
-  const [status, setStatus] = useState<AnalysisStatus>({
-    status: 'idle',
-    progress: 0,
-    message: '',
-  });
-  const [analysis, setAnalysis] = useState<FloorplanAnalysis | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string>('');
+  const [config, setConfigState] = useState(getConfig);
+  const [pages, setPages] = useState<ExtractedPage[]>([]);
+  const [status, setStatus] = useState<AnalysisStatus>({ status: 'idle', progress: 0, message: '' });
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [showConfig, setShowConfig] = useState(!config.webhookUrl);
 
-  const handleFileSelect = useCallback(async (file: File) => {
-    setAnalysis(null);
-    setFileName(file.name);
-    
-    // Create object URL for preview
-    const url = URL.createObjectURL(file);
-    setImageUrl(url);
-    
-    setStatus({
-      status: 'uploading',
-      progress: 0,
-      message: 'Wird vorbereitet...',
-    });
+  const updateWebhookUrl = (url: string) => {
+    const updated = { ...config, webhookUrl: url };
+    setConfigState(updated);
+    saveConfig(updated);
+  };
+
+  const handlePagesReady = useCallback((newPages: ExtractedPage[]) => {
+    setPages(newPages);
+  }, []);
+
+  const handleStartAnalysis = useCallback(async () => {
+    if (!config.webhookUrl) {
+      toast.error('Bitte zuerst die Webhook-URL konfigurieren');
+      setShowConfig(true);
+      return;
+    }
+
+    if (pages.length === 0) {
+      toast.error('Keine Seiten zum Analysieren');
+      return;
+    }
+
+    setStatus({ status: 'processing', progress: 20, message: 'Seiten werden an den Server gesendet...' });
 
     try {
-      const result = await simulateAnalysis(file.name, (progress, message) => {
-        setStatus({
-          status: progress < 100 ? 'processing' : 'complete',
-          progress,
-          message,
-        });
-      });
+      setStatus({ status: 'processing', progress: 40, message: `${pages.length} Seiten werden analysiert (KI-Erkennung)...` });
 
-      setAnalysis(result);
-      setStatus({
-        status: 'complete',
-        progress: 100,
-        message: 'Analyse abgeschlossen!',
-      });
-    } catch (error) {
+      const analysisResult = await analyzeFloorplans(config.webhookUrl, pages);
+
+      setResult(analysisResult);
+      setStatus({ status: 'complete', progress: 100, message: 'Analyse abgeschlossen!' });
+
+      if (analysisResult.floors.length === 0) {
+        toast.warning('Keine Grundrisse erkannt. Wurden nur Ansichten/Schnitte hochgeladen?');
+      } else {
+        toast.success(`${analysisResult.floors.length} Etage(n) erkannt – ${analysisResult.totalBgf.toFixed(2)} m² BGF`);
+      }
+    } catch (error: any) {
+      console.error('Analysis error:', error);
       setStatus({
         status: 'error',
         progress: 0,
-        message: 'Analyse fehlgeschlagen. Bitte versuchen Sie es erneut.',
+        message: `Fehler: ${error.message}`,
       });
+      toast.error(error.message);
     }
-  }, []);
+  }, [config.webhookUrl, pages]);
 
   const handleReset = () => {
-    if (imageUrl) {
-      URL.revokeObjectURL(imageUrl);
-    }
+    setPages([]);
+    setResult(null);
     setStatus({ status: 'idle', progress: 0, message: '' });
-    setAnalysis(null);
-    setImageUrl(null);
-    setFileName('');
   };
 
-  const handleAnalysisChange = (updatedAnalysis: FloorplanAnalysis) => {
-    setAnalysis(updatedAnalysis);
+  const handleResultChange = (updatedResult: AnalysisResult) => {
+    setResult(updatedResult);
   };
 
   return (
@@ -91,41 +96,84 @@ const Index = () => {
         <Header />
 
         <main className="container mx-auto px-6 py-8">
-          {!analysis ? (
-            // Upload State
-            <div className="max-w-2xl mx-auto space-y-6">
+          {!result ? (
+            /* ── UPLOAD & REVIEW PHASE ── */
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Webhook Config */}
+              {showConfig && (
+                <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Settings className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-foreground">Backend-Konfiguration</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Gib die Production Webhook-URL deiner n8n-Instanz ein:
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={config.webhookUrl}
+                      onChange={(e) => updateWebhookUrl(e.target.value)}
+                      placeholder="https://deine-n8n-instanz.de/webhook/grundriss-analyze"
+                      className="flex-1 font-mono text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => config.webhookUrl && setShowConfig(false)}
+                      disabled={!config.webhookUrl}
+                    >
+                      OK
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Config toggle when hidden */}
+              {!showConfig && config.webhookUrl && (
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setShowConfig(true)}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Backend-URL ändern
+                  </Button>
+                </div>
+              )}
+
               <div className="text-center">
-                <h2 className="mb-2 text-2xl font-bold text-foreground">
-                  Grundriss hochladen
-                </h2>
+                <h2 className="mb-2 text-2xl font-bold text-foreground">Grundrisse hochladen</h2>
                 <p className="text-muted-foreground">
-                  Laden Sie einen Grundriss als JPG, PNG oder PDF hoch. 
-                  Die Räume werden automatisch erkannt und vermessen.
+                  Laden Sie Grundrisse als JPG, PNG oder mehrseitige PDF hoch.
+                  Ansichten, Schnitte und Normen werden automatisch erkannt und ignoriert.
                 </p>
               </div>
 
               <UploadZone
-                onFileSelect={handleFileSelect}
-                isProcessing={status.status === 'processing' || status.status === 'uploading'}
+                onPagesReady={handlePagesReady}
+                isProcessing={status.status === 'processing'}
+                existingPages={pages}
+              />
+
+              <PageManager
+                pages={pages}
+                onPagesChange={setPages}
+                onStartAnalysis={handleStartAnalysis}
+                isProcessing={status.status === 'processing'}
               />
 
               <AnalysisProgress status={status} />
             </div>
           ) : (
-            // Results State - Split Layout
+            /* ── RESULTS PHASE ── */
             <div className="space-y-6">
-              {/* Header Row */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    BGF-Berechnung
-                  </h2>
+                  <h2 className="text-2xl font-bold text-foreground">BGF-Berechnung</h2>
                   <p className="text-sm text-muted-foreground">
-                    Bearbeiten Sie Räume und Maße nach Bedarf
+                    {result.floors.length} Etage(n) • {result.floors.reduce((s, f) => s + f.rooms.length, 0)} Räume •
+                    Bearbeiten Sie Werte nach Bedarf
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ExportButtons analysis={analysis} />
+                  <ExportButtons result={result} />
                   <Button variant="outline" size="sm" onClick={handleReset}>
                     <Upload className="mr-2 h-4 w-4" />
                     Neuer Grundriss
@@ -133,24 +181,7 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Split Layout: Preview + Table */}
-              <div className="grid gap-6 lg:grid-cols-2">
-                {/* Left: Floorplan Preview */}
-                <div className="space-y-4">
-                  {imageUrl && (
-                    <FloorplanPreview imageUrl={imageUrl} fileName={fileName} />
-                  )}
-                  <AnalysisHints analysis={analysis} />
-                </div>
-
-                {/* Right: Editable Table */}
-                <div>
-                  <EditableResultsTable 
-                    analysis={analysis} 
-                    onAnalysisChange={handleAnalysisChange}
-                  />
-                </div>
-              </div>
+              <FloorResultsTabs result={result} onResultChange={handleResultChange} />
             </div>
           )}
         </main>
