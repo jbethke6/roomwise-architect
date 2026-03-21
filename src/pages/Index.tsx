@@ -181,7 +181,7 @@ const Index = () => {
                 </div>
               </div>
 
-              <FloorResultsTabs result={result} onResultChange={handleResultChange} />
+              <FloorResultsTabs result={result} onResultChange={handleResultChange} pages={pages} />
             </div>
           )}
         </main>

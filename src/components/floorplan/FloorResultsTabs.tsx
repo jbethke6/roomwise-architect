@@ -1,19 +1,30 @@
 import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AnalysisResult, FloorData, RoomMeasurement } from '@/types/floorplan';
+import { AnalysisResult, FloorData, RoomMeasurement, ExtractedPage } from '@/types/floorplan';
 import { EditableResultsTable } from './EditableResultsTable';
 import { AnalysisHints } from './AnalysisHints';
+import { FloorplanPreview } from './FloorplanPreview';
 import { Building2, Layers, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FloorResultsTabsProps {
   result: AnalysisResult;
   onResultChange: (result: AnalysisResult) => void;
+  pages?: ExtractedPage[];
 }
 
-export function FloorResultsTabs({ result, onResultChange }: FloorResultsTabsProps) {
+export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorResultsTabsProps) {
   const floors = result.floors;
+
+  const getFloorImage = (floor: FloorData): string | null => {
+    // Match by pageNumber
+    const page = pages.find(p => p.pageNumber === floor.pageNumber);
+    if (page) return page.imageBase64;
+    // Fallback: match by floor label
+    const byFloor = pages.find(p => p.floor && p.floor === floor.floor);
+    return byFloor?.imageBase64 || null;
+  };
 
   const handleRoomsChange = (floorIndex: number, rooms: RoomMeasurement[]) => {
     const updatedFloors = [...result.floors];
@@ -156,6 +167,14 @@ export function FloorResultsTabs({ result, onResultChange }: FloorResultsTabsPro
       {floors.map((floor, i) => (
         <TabsContent key={i} value={`floor-${i}`}>
           <div className="space-y-6">
+            {/* Floor plan image preview */}
+            {(() => {
+              const img = getFloorImage(floor);
+              return img ? (
+                <FloorplanPreview imageUrl={img} fileName={`${floor.floor} – Seite ${floor.pageNumber}`} />
+              ) : null;
+            })()}
+
             <EditableResultsTable
               rooms={floor.rooms}
               floorLabel={floor.floor}
