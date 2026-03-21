@@ -167,6 +167,14 @@ export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorRe
       {floors.map((floor, i) => (
         <TabsContent key={i} value={`floor-${i}`}>
           <div className="space-y-6">
+            {/* Floor plan image preview */}
+            {(() => {
+              const img = getFloorImage(floor);
+              return img ? (
+                <FloorplanPreview imageUrl={img} fileName={`${floor.floor} – Seite ${floor.pageNumber}`} />
+              ) : null;
+            })()}
+
             <EditableResultsTable
               rooms={floor.rooms}
               floorLabel={floor.floor}
