@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AnalysisResult, FloorData, RoomMeasurement } from '@/types/floorplan';
+import { AnalysisResult, FloorData, RoomMeasurement, ExtractedPage } from '@/types/floorplan';
 import { EditableResultsTable } from './EditableResultsTable';
 import { AnalysisHints } from './AnalysisHints';
+import { FloorplanPreview } from './FloorplanPreview';
 import { Building2, Layers, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FloorResultsTabsProps {
   result: AnalysisResult;
   onResultChange: (result: AnalysisResult) => void;
+  pages?: ExtractedPage[];
 }
 
 export function FloorResultsTabs({ result, onResultChange }: FloorResultsTabsProps) {
