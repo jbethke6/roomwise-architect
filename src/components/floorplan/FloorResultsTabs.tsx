@@ -14,8 +14,17 @@ interface FloorResultsTabsProps {
   pages?: ExtractedPage[];
 }
 
-export function FloorResultsTabs({ result, onResultChange }: FloorResultsTabsProps) {
+export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorResultsTabsProps) {
   const floors = result.floors;
+
+  const getFloorImage = (floor: FloorData): string | null => {
+    // Match by pageNumber
+    const page = pages.find(p => p.pageNumber === floor.pageNumber);
+    if (page) return page.imageBase64;
+    // Fallback: match by floor label
+    const byFloor = pages.find(p => p.floor && p.floor === floor.floor);
+    return byFloor?.imageBase64 || null;
+  };
 
   const handleRoomsChange = (floorIndex: number, rooms: RoomMeasurement[]) => {
     const updatedFloors = [...result.floors];
