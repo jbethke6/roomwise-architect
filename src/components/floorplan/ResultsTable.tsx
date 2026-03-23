@@ -7,7 +7,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FloorplanAnalysis, ROOM_TYPE_LABELS } from '@/types/floorplan';
+import { ROOM_TYPE_LABELS, RoomMeasurement } from '@/types/floorplan';
 import { cn } from '@/lib/utils';
 import { Info, AlertTriangle, CheckCircle } from 'lucide-react';
 import {
