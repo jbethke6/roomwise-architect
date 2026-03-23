@@ -95,10 +95,12 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, onRoomsChange }: 
   const addRoom = () => {
     const newRoom: RoomMeasurement = {
       name: `Raum ${rooms.length + 1}`,
-      type: 'raum',
+      type: 'sonstige',
+      unitId: 'WE_1',
       length: 0,
       width: 0,
       area: 0,
+      areaFactor: 1.0,
       confidence: 1.0,
       interpolated: false,
       tolerance: 0,
