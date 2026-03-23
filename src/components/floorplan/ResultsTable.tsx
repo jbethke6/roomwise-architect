@@ -17,7 +17,11 @@ import {
 } from '@/components/ui/tooltip';
 
 interface ResultsTableProps {
-  analysis: FloorplanAnalysis;
+  analysis: {
+    rooms: RoomMeasurement[];
+    total: { bgf: number; hints: string[]; accuracy: number };
+    scaling: { unit: string; pixelPerMeter: number };
+  };
 }
 
 function getConfidenceBadge(confidence: number, interpolated: boolean) {
