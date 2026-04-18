@@ -7,11 +7,13 @@ import { FloorResultsTabs } from '@/components/floorplan/FloorResultsTabs';
 import { ExportButtons } from '@/components/floorplan/ExportButtons';
 import { SendReportDialog } from '@/components/floorplan/SendReportDialog';
 import { analyzeFloorplans } from '@/lib/api';
-import { getConfig, saveConfig } from '@/lib/config';
+import { getConfig, saveConfig, AppConfig } from '@/lib/config';
 import { AnalysisStatus, AnalysisResult, ExtractedPage } from '@/types/floorplan';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Settings, Send } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Upload, Settings, Send, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -20,12 +22,14 @@ const Index = () => {
   const [status, setStatus] = useState<AnalysisStatus>({ status: 'idle', progress: 0, message: '' });
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [showConfig, setShowConfig] = useState(!config.webhookUrl);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [auftragsnummer, setAuftragsnummer] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
 
-  const updateWebhookUrl = (url: string) => {
-    const updated = { ...config, webhookUrl: url };
+  const updateConfig = (patch: Partial<AppConfig>) => {
+    const updated = { ...config, ...patch };
     setConfigState(updated);
     saveConfig(updated);
   };
@@ -116,7 +120,7 @@ const Index = () => {
                   <div className="flex gap-2">
                     <Input
                       value={config.webhookUrl}
-                      onChange={(e) => updateWebhookUrl(e.target.value)}
+                      onChange={(e) => updateConfig({ webhookUrl: e.target.value })}
                       placeholder="https://deine-n8n-instanz.de/webhook/grundriss-analyze"
                       className="flex-1 font-mono text-sm"
                     />
@@ -129,6 +133,41 @@ const Index = () => {
                       OK
                     </Button>
                   </div>
+
+                  <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-4">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-full justify-between">
+                        Erweiterte Einstellungen (Archiv)
+                        <ChevronDown className={`h-4 w-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3 space-y-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="supabase-url" className="text-xs">Supabase URL</Label>
+                        <Input
+                          id="supabase-url"
+                          value={config.supabaseUrl}
+                          onChange={(e) => updateConfig({ supabaseUrl: e.target.value })}
+                          placeholder="https://xxxxx.supabase.co"
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="supabase-key" className="text-xs">Supabase Anon Key</Label>
+                        <Input
+                          id="supabase-key"
+                          value={config.supabaseAnonKey}
+                          onChange={(e) => updateConfig({ supabaseAnonKey: e.target.value })}
+                          placeholder="eyJhbGciOi..."
+                          className="font-mono text-sm"
+                          type="password"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Erforderlich, um auf das Archiv aller bisherigen Analysen zuzugreifen.
+                      </p>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               )}
 
@@ -198,11 +237,16 @@ const Index = () => {
       {result && (
         <SendReportDialog
           open={sendDialogOpen}
-          onOpenChange={setSendDialogOpen}
+          onOpenChange={(open) => {
+            setSendDialogOpen(open);
+            // Pre-fill with jobId on first open if user hasn't typed anything yet
+            if (open && !auftragsnummer) setAuftragsnummer(result.jobId);
+          }}
           webhookUrl={config.webhookUrl}
-          auftragsnummer={result.jobId}
+          auftragsnummer={auftragsnummer}
           recipientName={recipientName}
           recipientEmail={recipientEmail}
+          onAuftragsnummerChange={setAuftragsnummer}
           onRecipientChange={(name, email) => {
             setRecipientName(name);
             setRecipientEmail(email);

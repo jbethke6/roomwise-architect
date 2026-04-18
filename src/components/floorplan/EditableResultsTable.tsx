@@ -19,6 +19,7 @@ interface EditableResultsTableProps {
   bgf: number;
   unitId: string;
   onRoomsChange: (rooms: RoomMeasurement[]) => void;
+  readOnly?: boolean;
 }
 
 function getConfidenceBadge(confidence: number, interpolated: boolean) {
@@ -55,7 +56,7 @@ function getToleranceBadge(tolerance: number) {
   );
 }
 
-export function EditableResultsTable({ rooms, floorLabel, bgf, unitId, onRoomsChange }: EditableResultsTableProps) {
+export function EditableResultsTable({ rooms, floorLabel, bgf, unitId, onRoomsChange, readOnly = false }: EditableResultsTableProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Partial<RoomMeasurement>>({});
   const [isNewRoom, setIsNewRoom] = useState(false);
@@ -146,10 +147,12 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, unitId, onRoomsCh
               {rooms.length} Räume • Klicken zum Bearbeiten
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={addRoom} disabled={editingIndex !== null}>
-            <Plus className="mr-2 h-4 w-4" />
-            Raum hinzufügen
-          </Button>
+          {!readOnly && (
+            <Button variant="outline" size="sm" onClick={addRoom} disabled={editingIndex !== null}>
+              <Plus className="mr-2 h-4 w-4" />
+              Raum hinzufügen
+            </Button>
+          )}
         </div>
       </div>
 
@@ -163,7 +166,7 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, unitId, onRoomsCh
             <TableHead className="text-right">Fläche (m²)</TableHead>
             <TableHead className="text-center">Konfidenz</TableHead>
             <TableHead className="text-center">Toleranz</TableHead>
-            <TableHead className="w-[90px] text-center">Aktionen</TableHead>
+            {!readOnly && <TableHead className="w-[90px] text-center">Aktionen</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -270,27 +273,29 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, unitId, onRoomsCh
                   <TableCell className="text-center">
                     {getToleranceBadge(room.tolerance)}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => startEditing(index)}
-                        disabled={editingIndex !== null}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => deleteRoom(index)}
-                        disabled={editingIndex !== null}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {!readOnly && (
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => startEditing(index)}
+                          disabled={editingIndex !== null}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => deleteRoom(index)}
+                          disabled={editingIndex !== null}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </>
               )}
             </TableRow>
