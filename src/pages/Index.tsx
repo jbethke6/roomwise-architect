@@ -194,6 +194,21 @@ const Index = () => {
           )}
         </main>
       </div>
+
+      {result && (
+        <SendReportDialog
+          open={sendDialogOpen}
+          onOpenChange={setSendDialogOpen}
+          webhookUrl={config.webhookUrl}
+          auftragsnummer={result.jobId}
+          recipientName={recipientName}
+          recipientEmail={recipientEmail}
+          onRecipientChange={(name, email) => {
+            setRecipientName(name);
+            setRecipientEmail(email);
+          }}
+        />
+      )}
     </div>
   );
 };
