@@ -17,6 +17,7 @@ interface EditableResultsTableProps {
   rooms: RoomMeasurement[];
   floorLabel: string;
   bgf: number;
+  unitId: string;
   onRoomsChange: (rooms: RoomMeasurement[]) => void;
 }
 
@@ -54,18 +55,24 @@ function getToleranceBadge(tolerance: number) {
   );
 }
 
-export function EditableResultsTable({ rooms, floorLabel, bgf, onRoomsChange }: EditableResultsTableProps) {
+export function EditableResultsTable({ rooms, floorLabel, bgf, unitId, onRoomsChange }: EditableResultsTableProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Partial<RoomMeasurement>>({});
+  const [isNewRoom, setIsNewRoom] = useState(false);
 
   const startEditing = (index: number) => {
     setEditingIndex(index);
     setEditValues({ ...rooms[index] });
+    setIsNewRoom(false);
   };
 
   const cancelEditing = () => {
+    if (isNewRoom && editingIndex !== null) {
+      onRoomsChange(rooms.filter((_, i) => i !== editingIndex));
+    }
     setEditingIndex(null);
     setEditValues({});
+    setIsNewRoom(false);
   };
 
   const saveEditing = useCallback(() => {
@@ -90,13 +97,14 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, onRoomsChange }: 
     onRoomsChange(updatedRooms);
     setEditingIndex(null);
     setEditValues({});
+    setIsNewRoom(false);
   }, [editingIndex, editValues, rooms, onRoomsChange]);
 
   const addRoom = () => {
     const newRoom: RoomMeasurement = {
       name: `Raum ${rooms.length + 1}`,
       type: 'sonstige',
-      unitId: 'WE_1',
+      unitId,
       length: 0,
       width: 0,
       area: 0,
@@ -110,9 +118,17 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, onRoomsChange }: 
     onRoomsChange(updated);
     setEditingIndex(updated.length - 1);
     setEditValues(newRoom);
+    setIsNewRoom(true);
   };
 
   const deleteRoom = (index: number) => {
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setEditValues({});
+      setIsNewRoom(false);
+    } else if (editingIndex !== null && index < editingIndex) {
+      setEditingIndex(editingIndex - 1);
+    }
     onRoomsChange(rooms.filter((_, i) => i !== index));
   };
 
@@ -130,7 +146,7 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, onRoomsChange }: 
               {rooms.length} Räume • Klicken zum Bearbeiten
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={addRoom}>
+          <Button variant="outline" size="sm" onClick={addRoom} disabled={editingIndex !== null}>
             <Plus className="mr-2 h-4 w-4" />
             Raum hinzufügen
           </Button>
@@ -256,13 +272,20 @@ export function EditableResultsTable({ rooms, floorLabel, bgf, onRoomsChange }: 
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEditing(index)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => startEditing(index)}
+                        disabled={editingIndex !== null}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost" size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => deleteRoom(index)}
+                        disabled={editingIndex !== null}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
