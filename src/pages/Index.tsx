@@ -7,11 +7,13 @@ import { FloorResultsTabs } from '@/components/floorplan/FloorResultsTabs';
 import { ExportButtons } from '@/components/floorplan/ExportButtons';
 import { SendReportDialog } from '@/components/floorplan/SendReportDialog';
 import { analyzeFloorplans } from '@/lib/api';
-import { getConfig, saveConfig } from '@/lib/config';
+import { getConfig, saveConfig, AppConfig } from '@/lib/config';
 import { AnalysisStatus, AnalysisResult, ExtractedPage } from '@/types/floorplan';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Settings, Send } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Upload, Settings, Send, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -20,12 +22,14 @@ const Index = () => {
   const [status, setStatus] = useState<AnalysisStatus>({ status: 'idle', progress: 0, message: '' });
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [showConfig, setShowConfig] = useState(!config.webhookUrl);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [auftragsnummer, setAuftragsnummer] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
 
-  const updateWebhookUrl = (url: string) => {
-    const updated = { ...config, webhookUrl: url };
+  const updateConfig = (patch: Partial<AppConfig>) => {
+    const updated = { ...config, ...patch };
     setConfigState(updated);
     saveConfig(updated);
   };
