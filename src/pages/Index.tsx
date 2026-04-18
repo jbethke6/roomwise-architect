@@ -5,12 +5,13 @@ import { PageManager } from '@/components/floorplan/PageManager';
 import { AnalysisProgress } from '@/components/floorplan/AnalysisProgress';
 import { FloorResultsTabs } from '@/components/floorplan/FloorResultsTabs';
 import { ExportButtons } from '@/components/floorplan/ExportButtons';
+import { SendReportDialog } from '@/components/floorplan/SendReportDialog';
 import { analyzeFloorplans } from '@/lib/api';
 import { getConfig, saveConfig } from '@/lib/config';
 import { AnalysisStatus, AnalysisResult, ExtractedPage } from '@/types/floorplan';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Settings, ExternalLink } from 'lucide-react';
+import { Upload, Settings, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -19,6 +20,9 @@ const Index = () => {
   const [status, setStatus] = useState<AnalysisStatus>({ status: 'idle', progress: 0, message: '' });
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [showConfig, setShowConfig] = useState(!config.webhookUrl);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
 
   const updateWebhookUrl = (url: string) => {
     const updated = { ...config, webhookUrl: url };
@@ -174,6 +178,10 @@ const Index = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <ExportButtons result={result} />
+                  <Button size="sm" onClick={() => setSendDialogOpen(true)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Bericht erstellen & senden
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleReset}>
                     <Upload className="mr-2 h-4 w-4" />
                     Neuer Grundriss
