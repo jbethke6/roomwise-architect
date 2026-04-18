@@ -237,11 +237,16 @@ const Index = () => {
       {result && (
         <SendReportDialog
           open={sendDialogOpen}
-          onOpenChange={setSendDialogOpen}
+          onOpenChange={(open) => {
+            setSendDialogOpen(open);
+            // Pre-fill with jobId on first open if user hasn't typed anything yet
+            if (open && !auftragsnummer) setAuftragsnummer(result.jobId);
+          }}
           webhookUrl={config.webhookUrl}
-          auftragsnummer={result.jobId}
+          auftragsnummer={auftragsnummer}
           recipientName={recipientName}
           recipientEmail={recipientEmail}
+          onAuftragsnummerChange={setAuftragsnummer}
           onRecipientChange={(name, email) => {
             setRecipientName(name);
             setRecipientEmail(email);
