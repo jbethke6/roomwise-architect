@@ -16,24 +16,30 @@ interface SendReportDialogProps {
   auftragsnummer: string;
   recipientName: string;
   recipientEmail: string;
+  onAuftragsnummerChange?: (value: string) => void;
   onRecipientChange: (name: string, email: string) => void;
+  /** When true, the auftragsnummer field is locked (used in Archiv) */
+  lockAuftragsnummer?: boolean;
 }
 
 export function SendReportDialog({
   open, onOpenChange, webhookUrl, auftragsnummer,
-  recipientName, recipientEmail, onRecipientChange,
+  recipientName, recipientEmail,
+  onAuftragsnummerChange, onRecipientChange,
+  lockAuftragsnummer = false,
 }: SendReportDialogProps) {
   const [submitting, setSubmitting] = useState(false);
 
+  const auftragValid = auftragsnummer.trim().length > 0;
   const nameValid = recipientName.trim().length > 0;
   const emailValid = recipientEmail.includes('@') && recipientEmail.trim().length > 2;
-  const canSubmit = nameValid && emailValid && !submitting;
+  const canSubmit = auftragValid && nameValid && emailValid && !submitting;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await sendReport(webhookUrl, auftragsnummer, recipientEmail.trim(), recipientName.trim());
+      await sendReport(webhookUrl, auftragsnummer.trim(), recipientEmail.trim(), recipientName.trim());
       toast.success('Bericht wird erstellt und versendet...');
       onOpenChange(false);
     } catch (err: any) {
@@ -50,13 +56,23 @@ export function SendReportDialog({
         <DialogHeader>
           <DialogTitle>Bericht versenden</DialogTitle>
           <DialogDescription>
-            Geben Sie Empfängerdaten ein, um den BGF-Report zu versenden.
+            Geben Sie Auftrags- und Empfängerdaten ein, um den BGF-Report zu versenden.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="recipient-name">Empfänger Name</Label>
+            <Label htmlFor="auftragsnummer">Auftragsnummer *</Label>
+            <Input
+              id="auftragsnummer"
+              value={auftragsnummer}
+              onChange={(e) => onAuftragsnummerChange?.(e.target.value)}
+              placeholder="z.B. 2025-0042"
+              disabled={submitting || lockAuftragsnummer}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="recipient-name">Empfänger Name *</Label>
             <Input
               id="recipient-name"
               value={recipientName}
@@ -66,7 +82,7 @@ export function SendReportDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="recipient-email">Empfänger E-Mail</Label>
+            <Label htmlFor="recipient-email">Empfänger E-Mail *</Label>
             <Input
               id="recipient-email"
               type="email"
