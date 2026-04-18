@@ -17,6 +17,7 @@ interface EditableResultsTableProps {
   rooms: RoomMeasurement[];
   floorLabel: string;
   bgf: number;
+  unitId: string;
   onRoomsChange: (rooms: RoomMeasurement[]) => void;
 }
 
