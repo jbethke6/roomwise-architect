@@ -120,7 +120,7 @@ const Index = () => {
                   <div className="flex gap-2">
                     <Input
                       value={config.webhookUrl}
-                      onChange={(e) => updateWebhookUrl(e.target.value)}
+                      onChange={(e) => updateConfig({ webhookUrl: e.target.value })}
                       placeholder="https://deine-n8n-instanz.de/webhook/grundriss-analyze"
                       className="flex-1 font-mono text-sm"
                     />
@@ -133,6 +133,41 @@ const Index = () => {
                       OK
                     </Button>
                   </div>
+
+                  <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-4">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-full justify-between">
+                        Erweiterte Einstellungen (Archiv)
+                        <ChevronDown className={`h-4 w-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3 space-y-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="supabase-url" className="text-xs">Supabase URL</Label>
+                        <Input
+                          id="supabase-url"
+                          value={config.supabaseUrl}
+                          onChange={(e) => updateConfig({ supabaseUrl: e.target.value })}
+                          placeholder="https://xxxxx.supabase.co"
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="supabase-key" className="text-xs">Supabase Anon Key</Label>
+                        <Input
+                          id="supabase-key"
+                          value={config.supabaseAnonKey}
+                          onChange={(e) => updateConfig({ supabaseAnonKey: e.target.value })}
+                          placeholder="eyJhbGciOi..."
+                          className="font-mono text-sm"
+                          type="password"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Erforderlich, um auf das Archiv aller bisherigen Analysen zuzugreifen.
+                      </p>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               )}
 
