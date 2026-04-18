@@ -2,10 +2,16 @@ const STORAGE_KEY = 'bgf-rechner-config';
 
 export interface AppConfig {
   webhookUrl: string;
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  archiveFetchUrl?: string;
 }
 
 const DEFAULT_CONFIG: AppConfig = {
   webhookUrl: '',
+  supabaseUrl: '',
+  supabaseAnonKey: '',
+  archiveFetchUrl: '',
 };
 
 export function getConfig(): AppConfig {
