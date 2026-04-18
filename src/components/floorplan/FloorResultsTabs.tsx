@@ -252,6 +252,7 @@ export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorRe
                       rooms={group.rooms}
                       floorLabel={`${floor.floor} – ${group.label}`}
                       bgf={Math.round(group.rooms.reduce((s, r) => s + r.area, 0) * 100) / 100}
+                      unitId={group.unitId}
                       onRoomsChange={(rooms) => handleRoomsChange(i, group.unitId, rooms)}
                     />
                   </div>
@@ -261,6 +262,7 @@ export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorRe
                   rooms={floor.rooms}
                   floorLabel={floor.floor}
                   bgf={floor.bgf}
+                  unitId={unitGroups[0]?.unitId || 'WE_1'}
                   onRoomsChange={(rooms) => handleRoomsChange(i, unitGroups[0]?.unitId || 'WE_1', rooms)}
                 />
               )}

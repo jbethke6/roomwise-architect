@@ -57,3 +57,30 @@ export async function analyzeFloorplans(
     clearTimeout(timeoutId);
   }
 }
+
+/**
+ * Send the report PDF to the configured recipient via the n8n PDF/Mail webhook
+ */
+export async function sendReport(
+  webhookUrl: string,
+  auftragsnummer: string,
+  recipientEmail: string,
+  recipientName: string,
+): Promise<void> {
+  const targetUrl = webhookUrl.replace('grundriss-analyze', 'grundriss-pdf-mail');
+
+  const response = await fetch(targetUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      auftragsnummer,
+      empfaenger_email: recipientEmail,
+      empfaenger_name: recipientName,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Server-Fehler ${response.status}: ${text}`);
+  }
+}
