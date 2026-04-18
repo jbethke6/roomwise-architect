@@ -12,6 +12,7 @@ interface FloorResultsTabsProps {
   result: AnalysisResult;
   onResultChange: (result: AnalysisResult) => void;
   pages?: ExtractedPage[];
+  readOnly?: boolean;
 }
 
 /** Group rooms by unitId and return sorted groups */
@@ -40,7 +41,7 @@ function groupRoomsByUnit(rooms: RoomMeasurement[], units: ResidentialUnit[]) {
   });
 }
 
-export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorResultsTabsProps) {
+export function FloorResultsTabs({ result, onResultChange, pages = [], readOnly = false }: FloorResultsTabsProps) {
   const floors = result.floors;
 
   const getFloorImage = (floor: FloorData): string | null => {
@@ -254,6 +255,7 @@ export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorRe
                       bgf={Math.round(group.rooms.reduce((s, r) => s + r.area, 0) * 100) / 100}
                       unitId={group.unitId}
                       onRoomsChange={(rooms) => handleRoomsChange(i, group.unitId, rooms)}
+                      readOnly={readOnly}
                     />
                   </div>
                 ))
@@ -264,6 +266,7 @@ export function FloorResultsTabs({ result, onResultChange, pages = [] }: FloorRe
                   bgf={floor.bgf}
                   unitId={unitGroups[0]?.unitId || 'WE_1'}
                   onRoomsChange={(rooms) => handleRoomsChange(i, unitGroups[0]?.unitId || 'WE_1', rooms)}
+                  readOnly={readOnly}
                 />
               )}
 
