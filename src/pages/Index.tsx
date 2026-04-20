@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, Settings, Send, ChevronDown } from 'lucide-react';
+import { Upload, Settings, Send, ChevronDown, FileText } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -27,6 +28,14 @@ const Index = () => {
   const [auftragsnummer, setAuftragsnummer] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
+  const [vorgangsnummer, setVorgangsnummer] = useState('');
+  const [kundeName, setKundeName] = useState('');
+  const [kundeEmail, setKundeEmail] = useState('');
+
+  const auftragsInfoValid =
+    vorgangsnummer.trim().length > 0 &&
+    kundeName.trim().length > 0 &&
+    kundeEmail.includes('@') && kundeEmail.trim().length > 2;
 
   const updateConfig = (patch: Partial<AppConfig>) => {
     const updated = { ...config, ...patch };
@@ -50,12 +59,21 @@ const Index = () => {
       return;
     }
 
+    if (!auftragsInfoValid) {
+      toast.error('Bitte Vorgangsnummer, Kundenname und Kunden-E-Mail ausfüllen');
+      return;
+    }
+
     setStatus({ status: 'processing', progress: 20, message: 'Seiten werden an den Server gesendet...' });
 
     try {
       setStatus({ status: 'processing', progress: 40, message: `${pages.length} Seiten werden analysiert (KI-Erkennung)...` });
 
-      const analysisResult = await analyzeFloorplans(config.webhookUrl, pages);
+      const analysisResult = await analyzeFloorplans(config.webhookUrl, pages, {
+        vorgangsnummer: vorgangsnummer.trim(),
+        kundeName: kundeName.trim(),
+        kundeEmail: kundeEmail.trim(),
+      });
 
       setResult(analysisResult);
       setStatus({ status: 'complete', progress: 100, message: 'Analyse abgeschlossen!' });
