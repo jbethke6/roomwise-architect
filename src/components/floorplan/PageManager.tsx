@@ -1,20 +1,33 @@
 import { ExtractedPage } from '@/types/floorplan';
 import { X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface PageManagerProps {
   pages: ExtractedPage[];
   onPagesChange: (pages: ExtractedPage[]) => void;
   onStartAnalysis: () => void;
   isProcessing: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
-export function PageManager({ pages, onPagesChange, onStartAnalysis, isProcessing }: PageManagerProps) {
+export function PageManager({ pages, onPagesChange, onStartAnalysis, isProcessing, disabled = false, disabledReason }: PageManagerProps) {
   const removePage = (id: string) => {
     onPagesChange(pages.filter((p) => p.id !== id));
   };
 
   if (pages.length === 0) return null;
+
+  const startBtn = (
+    <Button
+      onClick={onStartAnalysis}
+      disabled={isProcessing || disabled}
+      className="bg-copper hover:bg-copper-dark text-accent-foreground"
+    >
+      Analyse starten
+    </Button>
+  );
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
@@ -28,13 +41,18 @@ export function PageManager({ pages, onPagesChange, onStartAnalysis, isProcessin
               Etagen & Nicht-Grundrisse werden automatisch erkannt
             </p>
           </div>
-          <Button
-            onClick={onStartAnalysis}
-            disabled={isProcessing}
-            className="bg-copper hover:bg-copper-dark text-accent-foreground"
-          >
-            Analyse starten
-          </Button>
+          {disabled && disabledReason ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>{startBtn}</span>
+                </TooltipTrigger>
+                <TooltipContent>{disabledReason}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            startBtn
+          )}
         </div>
       </div>
 
