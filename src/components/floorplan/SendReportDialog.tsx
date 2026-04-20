@@ -12,7 +12,7 @@ import { sendReport } from '@/lib/api';
 interface SendReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  webhookUrl: string;
+  pdfWebhookUrl: string;
   auftragsnummer: string;
   recipientName: string;
   recipientEmail: string;
@@ -23,7 +23,7 @@ interface SendReportDialogProps {
 }
 
 export function SendReportDialog({
-  open, onOpenChange, webhookUrl, auftragsnummer,
+  open, onOpenChange, pdfWebhookUrl, auftragsnummer,
   recipientName, recipientEmail,
   onAuftragsnummerChange, onRecipientChange,
   lockAuftragsnummer = false,
@@ -39,7 +39,7 @@ export function SendReportDialog({
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await sendReport(webhookUrl, auftragsnummer.trim(), recipientEmail.trim(), recipientName.trim());
+      await sendReport(pdfWebhookUrl, auftragsnummer.trim(), recipientEmail.trim(), recipientName.trim());
       toast.success('Bericht wird erstellt und versendet...');
       onOpenChange(false);
     } catch (err: any) {
