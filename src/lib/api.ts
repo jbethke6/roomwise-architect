@@ -5,11 +5,20 @@ const TIMEOUT = 5 * 60 * 1000; // 5 minutes
 export interface AnalyzeRequest {
   jobId: string;
   auftragsnummer?: string;
+  vorgangsnummer?: string;
+  kunde_name?: string;
+  kunde_email?: string;
   pages: {
     pageNumber: number;
     imageBase64: string;
     etage?: string;
   }[];
+}
+
+export interface AuftragsInfo {
+  vorgangsnummer: string;
+  kundeName: string;
+  kundeEmail: string;
 }
 
 /**
@@ -18,11 +27,16 @@ export interface AnalyzeRequest {
 export async function analyzeFloorplans(
   webhookUrl: string,
   pages: ExtractedPage[],
+  auftragsInfo?: AuftragsInfo,
 ): Promise<AnalysisResult> {
   const jobId = crypto.randomUUID();
 
   const payload: AnalyzeRequest = {
     jobId,
+    vorgangsnummer: auftragsInfo?.vorgangsnummer,
+    kunde_name: auftragsInfo?.kundeName,
+    kunde_email: auftragsInfo?.kundeEmail,
+    auftragsnummer: auftragsInfo?.vorgangsnummer,
     pages: pages.map((p, i) => ({
       pageNumber: i + 1,
       imageBase64: p.imageBase64,
@@ -62,26 +76,20 @@ export async function analyzeFloorplans(
  * Send the report PDF to the configured recipient via the n8n PDF/Mail webhook
  */
 export async function sendReport(
-  webhookUrl: string,
+  pdfWebhookUrl: string,
   auftragsnummer: string,
-  recipientEmail: string,
-  recipientName: string,
+  empfaenger_email: string,
+  empfaenger_name: string,
 ): Promise<void> {
-  const targetUrl = webhookUrl.replace('grundriss-analyze', 'grundriss-pdf-mail');
-
-  const response = await fetch(targetUrl, {
+  const url = pdfWebhookUrl || 'https://n8n.smartimmo.solutions/webhook/grundriss-pdf-mail';
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      auftragsnummer,
-      empfaenger_email: recipientEmail,
-      empfaenger_name: recipientName,
-    }),
+    body: JSON.stringify({ auftragsnummer, empfaenger_email, empfaenger_name }),
   });
-
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Server-Fehler ${response.status}: ${text}`);
+    throw new Error(`Fehler ${response.status}: ${text}`);
   }
 }
 

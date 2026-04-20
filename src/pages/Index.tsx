@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, Settings, Send, ChevronDown } from 'lucide-react';
+import { Upload, Settings, Send, ChevronDown, FileText } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -27,6 +28,14 @@ const Index = () => {
   const [auftragsnummer, setAuftragsnummer] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
+  const [vorgangsnummer, setVorgangsnummer] = useState('');
+  const [kundeName, setKundeName] = useState('');
+  const [kundeEmail, setKundeEmail] = useState('');
+
+  const auftragsInfoValid =
+    vorgangsnummer.trim().length > 0 &&
+    kundeName.trim().length > 0 &&
+    kundeEmail.includes('@') && kundeEmail.trim().length > 2;
 
   const updateConfig = (patch: Partial<AppConfig>) => {
     const updated = { ...config, ...patch };
@@ -50,12 +59,21 @@ const Index = () => {
       return;
     }
 
+    if (!auftragsInfoValid) {
+      toast.error('Bitte Vorgangsnummer, Kundenname und Kunden-E-Mail ausfüllen');
+      return;
+    }
+
     setStatus({ status: 'processing', progress: 20, message: 'Seiten werden an den Server gesendet...' });
 
     try {
       setStatus({ status: 'processing', progress: 40, message: `${pages.length} Seiten werden analysiert (KI-Erkennung)...` });
 
-      const analysisResult = await analyzeFloorplans(config.webhookUrl, pages);
+      const analysisResult = await analyzeFloorplans(config.webhookUrl, pages, {
+        vorgangsnummer: vorgangsnummer.trim(),
+        kundeName: kundeName.trim(),
+        kundeEmail: kundeEmail.trim(),
+      });
 
       setResult(analysisResult);
       setStatus({ status: 'complete', progress: 100, message: 'Analyse abgeschlossen!' });
@@ -163,8 +181,18 @@ const Index = () => {
                           type="password"
                         />
                       </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pdf-webhook" className="text-xs">PDF-Webhook URL</Label>
+                        <Input
+                          id="pdf-webhook"
+                          value={config.pdfWebhookUrl}
+                          onChange={(e) => updateConfig({ pdfWebhookUrl: e.target.value })}
+                          placeholder="https://n8n.smartimmo.solutions/webhook/grundriss-pdf-mail"
+                          className="font-mono text-sm"
+                        />
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Erforderlich, um auf das Archiv aller bisherigen Analysen zuzugreifen.
+                        Optional: eigene URL für den PDF/Mail-Webhook. Bleibt leer, wird der Standard verwendet.
                       </p>
                     </CollapsibleContent>
                   </Collapsible>
@@ -189,6 +217,47 @@ const Index = () => {
                 </p>
               </div>
 
+              {/* Auftragsinfo Card */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Auftragsinfo</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Diese Daten werden mit der Analyse an das Backend übergeben.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="vorgangsnummer" className="text-xs">Vorgangsnummer *</Label>
+                    <Input
+                      id="vorgangsnummer"
+                      value={vorgangsnummer}
+                      onChange={(e) => setVorgangsnummer(e.target.value)}
+                      placeholder="z.B. 2025-0042"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="kunde-name" className="text-xs">Kundenname *</Label>
+                    <Input
+                      id="kunde-name"
+                      value={kundeName}
+                      onChange={(e) => setKundeName(e.target.value)}
+                      placeholder="Max Mustermann"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="kunde-email" className="text-xs">Kunden-E-Mail *</Label>
+                    <Input
+                      id="kunde-email"
+                      type="email"
+                      value={kundeEmail}
+                      onChange={(e) => setKundeEmail(e.target.value)}
+                      placeholder="kunde@beispiel.de"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <UploadZone
                 onPagesReady={handlePagesReady}
                 isProcessing={status.status === 'processing'}
@@ -200,6 +269,8 @@ const Index = () => {
                 onPagesChange={setPages}
                 onStartAnalysis={handleStartAnalysis}
                 isProcessing={status.status === 'processing'}
+                disabled={!auftragsInfoValid}
+                disabledReason="Bitte zuerst Vorgangsnummer, Kundenname und Kunden-E-Mail ausfüllen"
               />
 
               <AnalysisProgress status={status} />
@@ -239,10 +310,14 @@ const Index = () => {
           open={sendDialogOpen}
           onOpenChange={(open) => {
             setSendDialogOpen(open);
-            // Pre-fill with jobId on first open if user hasn't typed anything yet
-            if (open && !auftragsnummer) setAuftragsnummer(result.jobId);
+            // Pre-fill on first open if user hasn't typed anything yet
+            if (open) {
+              if (!auftragsnummer) setAuftragsnummer(vorgangsnummer || result.jobId);
+              if (!recipientName && kundeName) setRecipientName(kundeName);
+              if (!recipientEmail && kundeEmail) setRecipientEmail(kundeEmail);
+            }
           }}
-          webhookUrl={config.webhookUrl}
+          pdfWebhookUrl={config.pdfWebhookUrl}
           auftragsnummer={auftragsnummer}
           recipientName={recipientName}
           recipientEmail={recipientEmail}

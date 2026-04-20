@@ -190,7 +190,7 @@ const Archiv = () => {
       <SendReportDialog
         open={sendOpen}
         onOpenChange={setSendOpen}
-        webhookUrl={config.webhookUrl}
+        pdfWebhookUrl={config.pdfWebhookUrl}
         auftragsnummer={sendAuftrag}
         recipientName={recipientName}
         recipientEmail={recipientEmail}
